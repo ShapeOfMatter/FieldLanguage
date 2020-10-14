@@ -1,0 +1,24 @@
+
+
+lambda calculus
+with types
+   F[p]
+   F[p,k]
+   N
+IF
++
+*
+LET
+
+parser?
+interpreter
+
+
+
+LET p = 11:N,
+    x = 4444:F[p],
+    y = 77777:F[23]
+IN x + ((y * y):F[p]
+
+
+
