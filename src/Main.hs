@@ -5,33 +5,52 @@ import Arithmatic (modInv)
 data Type = Field Integer  -- prime/modulo 
           | Function Type Type  -- from, to
 
-data Value = Value Integer Integer  -- prime, number
-           | Negation Value
-           | Inverse Value
-           | Addition Value Value
-           | Multiplication Value Value
+lambdaType :: Type -> (Type, Type)
+lambdaType (Function from to) = (from, to)
+lambdaType _ = undefined  -- There's gonna be a lot of these partial functions. It's not a good system.
 
-data Expression = Variable String
+
+data Variable = Variable {typeOfVar :: Type,
+                          nameOfVar :: String} 
+
+data Value = Value Integer Integer  -- field, number
+           | Lambda Variable Expression
+
+trueValue = Value 2 1  -- Do we need these here? I think we need them for the definition of IF...
+falseValue = Value 2 0
+
+data Expression = BaseValue Value
+                | BaseVariable String  -- not Variable?
+                | Negative Expression
+                | Inverse Expression
+                | Addition Expression Expression
+                | Multiplication Expression Expression
                 | Application Expression Expression
-                | Lambda String Type Expression
-                | Let String Expression Expression
+                | Let Variable Expression Expression
                 | Conditional Expression Expression Expression
-                | Basic Value
 
-typeOf :: Context -> Expression -> Type
-typeOf gamma (Variable name) = gamma `lookupType` name
-typeOf gamma (Application func val) = let tfunc = typeOf gamma func,
-                                          tval = typeOf gamma val
-                                          (from, to) = lambdaType tfunc  -- How?
-                                      in if tval == from then to else undefined  -- TODO: Better error reporting
-typeOf gamma (Lambda var tvar body) = Function tvar (typeof ((var, tvar, _):gamma) body)  -- meh?
-typeOf gamma (Let var val body) = let tval = typeOf gamma val  -- I don't think we have to recurse here, but maybe it's clearer if we do?
-                                  in typeOf gamma $ Application (Lambda var tval body) val
-typeOf gamma (Conditional predicate a b) = let ta = typeOf gamma a
-                                           in if (typeOf gamma predicate) == Field 2 && (typeOf gamma b) == ta
-                                              then ta else undefined
-typeOf _ (Basic val) = let Value prime _ = evalValue val  -- This doesn't work! doesn't validate anything!
-                       in Field prime
+newtype TypeContext = TypeContext [Variable]
+lookupType :: TypeContext -> String -> Type
+lookupType v:gamma n = if n == (nameOfVar v) then typeOfVar v else lookupType gamma n
+lookupType [] = undefined  -- Gotta represent failure somehow!
+
+typeOf :: TypeContext -> Expression -> Type
+typeOf gamma = tInG
+    where tInG (BaseValue (Value prime _)) = Field prime,
+          tInG (BaseValue (Lambda var body)) = Function (typeOfVar var) $ typeOf (var:gamma) body
+          tInG (BaseVariable name) = gamma `lookupType` name
+          tInG (Negative exp) = tInG exp
+          tInG (Inverse exp) = tInG exp
+          tInG (Addition expL expR) = let t = tIng expL
+                                      in if t == (tInG expR) then t else undefined
+          tIng (Multiplication expL expr) = let t = tIng expL
+                                            in if t == (tInG expR) then t else undefined
+          tInG (Application func val) = let tval = tInG val
+                                            (from, to) = lambdaType $ tIng func
+                                        in if tval == from then to else undefined  -- TODO: Better error reporting
+          tInG (Let var val body) = tInG $ Application (Lambda var body) val
+          tInG (Conditional pred a b) = let ta = tInG a
+                                        in if (tInG pred) == Field 2 && ta == (tInG b) then ta else undefined
 
 evalExp :: Context -> Expression -> Expression
 evalExp = undefined
