@@ -1,6 +1,6 @@
 module Arithmatic where
 
--- Stolen from https://rosettacode.org/wiki/Modular_inverse#Haskell
+-- Stolen from https://rosettacode.org/wiki/Modular_inverse#Haskell  (Gotta worry about licence compatability!)
 -- Given a and m, return Just x such that ax = 1 mod m.
 -- If there is no such x return Nothing.
 modInv :: Integeral a => a -> a -> Maybe a
