@@ -22,3 +22,43 @@ IN x + ((y * y):F[p]
 
 
 
+
+
+
+
+
+
+
+exception DifferentFields of int * int;;
+    
+type gf = { e : int; p : int };;
+
+ 
+
+let plus a b = 
+  if a.p = b.p then (a.e + b.e) mod a.p
+  else raise (DifferentFields (a.p, b.p));;
+
+ 
+
+ 
+
+let x : gf = { e = 5; p = 7 };;
+plus x x;;
+  
+
+ 
+
+  
+
+3@5     Element 3 of Mod 5
+x@y     Element x of Mod y
+a + b   Could use + for addition
+-- a +% b  Or "PLUS MOD" if we want to support int addition and not overload +
+
+ 
+
+We can prevent instantiation of fields where e >= p, or just instantiate with e % p...
+Do we want to prevent instantiation of non-prime "fields"? Computationally expensive?
+*)
+ 

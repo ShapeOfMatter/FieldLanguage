@@ -19,9 +19,6 @@ data Value = Element Integer Integer  -- field, number
            | Lambda Variable Expression
              deriving (Show)
 
-trueElement = Element 2 1  -- Do we need these here? I think we need them for the definition of IF...
-falseElement = Element 2 0
-
 data Expression = BaseValue Value
                 | BaseVariable String  -- not Variable?
                 | Negative Expression
@@ -63,35 +60,36 @@ lookupVariable ((var, val):gamma) n = if n == (nameOfVar var) then val else look
 lookupVariable [] _ = undefined
 
 evalExp :: EvalContext -> Expression -> Expression
-evalExp gamma = eInG
-    where eInG val@(BaseValue _) = val
-          eInG (BaseVariable name) = gamma `lookupVariable` name
-          -- Negation cases
-          eInG (Negative (BaseValue (Element prime val))) = BaseValue $ Element prime ((-val) `mod` prime)
-          eInG (Negative (BaseValue _)) = undefined
-          eInG (Negative exp) = Negative $ eInG exp
-          -- Inverse cases
-          eInG (Inverse (BaseValue (Element prime val))) = BaseValue $ maybe undefined (Element prime) (val `modInv` prime)
-          eInG (Inverse (BaseValue _)) = undefined
-          eInG (Inverse exp) = Inverse $ eInG exp
-          -- Addition cases
-          eInG (Addition (BaseValue (Element prime val1)) (BaseValue (Element _ val2))) = BaseValue $ Element prime ((val1 + val2) `mod` prime)
-          eInG (Addition exp1@(BaseValue _) exp2) = Addition exp1 (eInG exp2)
-          eInG (Addition exp1 exp2@(BaseValue _)) = Addition (eInG exp1) exp2  -- No explicit failure for Lambda!?
-          -- Multiplicaiton cases
-          eInG (Multiplication (BaseValue (Element prime val1)) (BaseValue (Element _ val2))) = BaseValue $ Element prime ((val1 * val2) `mod` prime)
-          eInG (Multiplication exp1@(BaseValue _) exp2) = Multiplication exp1 (eInG exp2)
-          eInG (Multiplication exp1 exp2@(BaseValue _)) = Multiplication (eInG exp1) exp2  -- No explicit failure for Lambda!?
-          -- Application cases
-          eInG (Application (BaseValue (Lambda var body)) arg) = evalExp ((var, arg):gamma) body
-          eInG (Application (BaseValue _) _) = undefined
-          eInG (Application funcExp arg) = Application (eInG funcExp) arg
-          -- Let cases (Let is just sugar!)
-          eInG (Let var val body) = Application (BaseValue (Lambda var body)) val
-          -- Conditional cases
-          eInG (Conditional (BaseValue (Element 2 b)) expT expF) = eInG $ if 1 == b then expT else expF
-          eInG (Conditional (BaseValue _) _ _) = undefined
-          eInG (Conditional predicate expT expF) = Conditional (eInG predicate) expT expF
+evalExp gamma e = case e of
+    val@(BaseValue _) -> val
+    BaseVariable name -> gamma `lookupVariable` name
+    -- Negation cases
+    Negative (BaseValue (Element prime val)) -> BaseValue $ Element prime ((-val) `mod` prime)
+    Negative (BaseValue _) -> undefined
+    Negative exp -> Negative $ eInG exp
+    -- Inverse cases
+    Inverse (BaseValue (Element prime val)) -> BaseValue $ maybe undefined (Element prime) (val `modInv` prime)
+    Inverse (BaseValue _) -> undefined
+    Inverse exp -> Inverse $ eInG exp
+    -- Addition cases
+    Addition (BaseValue (Element prime val1)) (BaseValue (Element _ val2)) -> BaseValue $ Element prime ((val1 + val2) `mod` prime)
+    Addition exp1@(BaseValue _) exp2 -> Addition exp1 (eInG exp2)
+    Addition exp1 exp2@(BaseValue _) -> Addition (eInG exp1) exp2  -- No explicit failure for Lambda!?
+    -- Multiplicaiton cases
+    Multiplication (BaseValue (Element prime val1)) (BaseValue (Element _ val2)) -> BaseValue $ Element prime ((val1 * val2) `mod` prime)
+    Multiplication exp1@(BaseValue _) exp2 -> Multiplication exp1 (eInG exp2)
+    Multiplication exp1 exp2@(BaseValue _) -> Multiplication (eInG exp1) exp2  -- No explicit failure for Lambda!?
+    -- Application cases
+    Application (BaseValue (Lambda var body)) arg -> evalExp ((var, arg):gamma) body
+    Application (BaseValue _) _ -> undefined
+    Application funcExp arg -> Application (eInG funcExp) arg
+    -- Let cases (Let is just sugar!)
+    Let var val body -> Application (BaseValue (Lambda var body)) val
+    -- Conditional cases
+    Conditional (BaseValue (Element 2 b)) expT expF -> eInG $ if 1 == b then expT else expF
+    Conditional (BaseValue _) _ _ -> undefined
+    Conditional predicate expT expF -> Conditional (eInG predicate) expT expF
+    where eInG = evalExp gamma
 
 evaluateWith :: EvalContext -> Expression -> Value
 evaluateWith _ (BaseValue val) = val
