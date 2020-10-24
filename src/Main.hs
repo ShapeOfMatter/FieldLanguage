@@ -2,29 +2,38 @@ module Main where
 
 import Arithmatic (modInv)
 
-data Type = Field Integer  -- prime/modulo 
-          | Function Type Type  -- from, to
-            deriving (Eq, Show)
-
-lambdaType :: Type -> (Type, Type)
-lambdaType (Function from to) = (from, to)
-lambdaType _ = undefined  -- There's gonna be a lot of these partial functions. It's not a good system.
-
-
-data Variable = Variable {typeOfVar :: Type,
-                          nameOfVar :: String} 
+data Variable = Variable {typeOfVar :: Value,
+                          nameOfVar :: String}
                 deriving (Eq, Show)
 
-data Value = Element Integer Integer  -- field, number
+data Value = GElement Integer Integer  -- group-side, number
+           | Group Integer  -- size
+           | Natural
+           | FElement Integer Integer  -- field-size, number
+           | Field Integer  -- size
+           | Prime  -- PrimePower?
            | Lambda Variable Expression
-             deriving (Show)
+           | Function Value Value
+           | Type
+             deriving (Eq, Show)
+typeOfValue GElement m _ = Group m
+typeOfValue Group _ = Natural
+typeOfValue Natural = Type
+typeOfValue FElement m _ = Field m
+typeOfValue Field _ = Prime
+typeOfValue Prime = Type
+typeOfValue Lambda v e = Function (typeOfVar v) (typeOf [] e)  -- Wrong! need an evaluati on context!
+typeOfValue Function _ _ = Type
+typeOfValue Type = Type
 
-data Expression = BaseValue Value
-                | BaseVariable String  -- not Variable?
-                | Negative Expression
-                | Inverse Expression
-                | Addition Expression Expression
-                | Multiplication Expression Expression
+data Expression = BaseValue Value      -- v
+                | BaseVariable String  -- x  -- not Variable?
+                | TypeOf Expression    -- v->v
+                | Negative Expression  -- a in {Group, Field} => a->a
+                | Addition Expression Expression  -- a in {Group, Natural, Field} => a->a->a
+                | Inverse Expression   -- Field x -> Field x
+                | Multiplication Expression Expression  -- Field x -> Field x
+                | Modulo Expression Expression  -- a in {Natural, Prime}, b in {Group, Natural, Field} => a->b->a
                 | Application Expression Expression  -- function, value
                 | Let Variable Expression Expression  -- Let var=exp in body
                 | Conditional Expression Expression Expression  -- predicate, true-path, false-path
@@ -35,19 +44,19 @@ lookupType :: TypeContext -> String -> Type
 lookupType (v:gamma) n = if n == (nameOfVar v) then typeOfVar v else lookupType gamma n
 lookupType [] _ = undefined  -- Gotta represent failure somehow!
 
-typeOf :: TypeContext -> Expression -> Type
-typeOf gamma e = case e of
-    BaseValue (Element prime _) -> Field prime
-    BaseValue (Lambda var body) -> Function (typeOfVar var) $ typeOf (var:gamma) body
+typeOf :: TypeContext -> Expression -> Value
+typeOf gamma e = case e of    -- Many of these probably need to be more agressive in failure.
+    BaseValue v = typeOfValue v
     BaseVariable name -> gamma `lookupType` name
+    TypeOf exp -> typeOfValue $ tInG exp
     Negative exp -> tInG exp
-    Inverse exp -> tInG exp
     Addition expL expR -> let t = tInG expL
                           in if t == (tInG expR) then t else undefined
+    Inverse exp -> tInG exp
     Multiplication expL expR -> let t = tInG expL
                                 in if t == (tInG expR) then t else undefined
     Application func val -> let tval = tInG val
-                                (from, to) = lambdaType $ tInG func
+                                Function from to = tInG func
                             in if tval == from then to else undefined  -- TODO: Better error reporting
     Let var val body -> tInG $ Application (BaseValue (Lambda var body)) val
     Conditional pred a b -> let ta = tInG a
