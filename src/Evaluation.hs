@@ -16,11 +16,13 @@ typeOfValue _ Type = Type
 
 type TypeContext = [Variable]
 lookupType :: TypeContext -> String -> Type
-lookupType (v:gamma) n = if n == (nameOfVar v) then typeOfVar v else lookupType gamma n
+lookupType (v:gamma) n = if n == (nameOfVar v)
+                         then typeOfVar v
+                         else lookupType gamma n
 lookupType [] _ = undefined  -- Gotta represent failure somehow!
 
 typeOf :: TypeContext -> Expression -> Value
-typeOf gamma e = case e of    -- Many of these probably need to be more agressive in failure.
+typeOf gamma e = case e of    -- maybe be more agressive in failure
     BaseValue v = typeOfValue gamma v
     BaseVariable name -> gamma `lookupType` name
     TypeOf exp -> typeOfValue $ tInG exp
@@ -39,21 +41,38 @@ typeOf gamma e = case e of    -- Many of these probably need to be more agressiv
     Multiplication expL expR -> case assuming (== tInG expR) (tInG expL) of
         t@(FieldType _) -> t
         _ -> undefined
-    Modulo base exp -> 
-    Application func val -> let tval = tInG val
-                                Function from to = tInG func
-                            in if tval == from then to else undefined  -- TODO: Better error reporting
+    AsElement base exp -> let checkExpType = const id (  -- lame startegy
+                              case tInG exp of
+                                  GroupType _ -> ()
+                                  FieldType _ -> ()
+                                  Natural -> ()
+                                 _ -> undefined
+                          )
+                          in case base of  -- We need to evaluate base!
+                              b@(GroupType _) -> checkExpType b
+                              b@(FieldType _) -> checkExpType b
+                              _ -> undefined
+    AsNatural exp -> case tInG exp of
+        t@(FieldType _) -> t
+        t@(FieldClass) -> t
+        t@(GroupType _) -> t
+        _ -> undefined
+    Application func val -> let Function from to = tInG func  -- could fail
+                            in if tInG val == from then to else undefined
     Let var val body -> tInG $ Application (BaseValue (Lambda var body)) val
-    Conditional pred a b -> let ta = tInG a
-                            in if (tInG pred) == Field 2 && ta == (tInG b) then ta else undefined
+    Conditional pred a b -> let testBranchTypes = (== tInG b)
+                                testPredType = (&& (tInG pred == Field 2))
+                            in assuming (testPredType . testBranchTypes) tInG a
     where tInG = typeOf gamma
           assuming predicate value = if (predicate value)
                                      then value
                                      else undefined
 
 type EvalContext = [(Variable, Expression)]
-lookupVariable :: EvalContext -> String -> Expression -- If we could make this stateful it'd be a huge boost in performance.
-lookupVariable ((var, val):gamma) n = if n == (nameOfVar var) then val else lookupVariable gamma n
+lookupVariable :: EvalContext -> String -> Expression
+lookupVariable ((var, val):gamma) n = if n == (nameOfVar var)
+                                      then val
+                                      else lookupVariable gamma n
 lookupVariable [] _ = undefined
 
 evalExp :: EvalContext -> Expression -> Expression

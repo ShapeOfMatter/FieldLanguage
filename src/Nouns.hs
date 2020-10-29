@@ -21,10 +21,12 @@ data Expression = BaseValue Value      -- v
                 | BaseVariable String  -- x  -- not Variable?
                 | GetTypeOf Expression    -- v->v
                 | Negative Expression  -- a in {Group, Field} => a->a
-                | Addition Expression Expression  -- a in {Group, Natural, Field} => a->a->a
-                | Inverse Expression   -- Field x -> Field x
-                | Multiplication Expression Expression  -- Field x -> Field x
-                | Modulo Expression Expression  -- a in {Natural, Prime}, b in {Group, Natural, Field} => a->b->a
+                | Addition Expression Expression
+                | Inverse Expression
+                | Multiplication Expression Expression
+                | AsElement Expression Expression
+                | AsNatural Expression
+                -- | AsPrime Expression
                 | Application Expression Expression  -- function, value
                 | Let Variable Expression Expression  -- Let var=exp in body
                 | Conditional Expression Expression Expression  -- predicate, true-path, false-path
