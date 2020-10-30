@@ -80,21 +80,37 @@ evalExp gamma e = case e of
     val@(BaseValue _) -> val
     BaseVariable name -> gamma `lookupVariable` name
     -- Negation cases
-    Negative (BaseValue (Element prime val)) -> BaseValue $ Element prime ((-val) `mod` prime)
-    Negative (BaseValue _) -> undefined
+    Negative (BaseValue element) ->
+        let (kind, size, num) = case element of
+                GroupElement s n -> (GroupElement, s, n)
+                FieldElement s n -> (FieldElement, s, n)
+                _ -> undefined
+        in kind size $ (-num) `mod` size
     Negative exp -> Negative $ eInG exp
     -- Inverse cases
-    Inverse (BaseValue (Element prime val)) -> BaseValue $ maybe undefined (Element prime) (val `modInv` prime)
+    Inverse (BaseValue (FieldElement size val)) ->
+        BaseValue $ maybe undefined (FieldElement size) (val `modInv` size)
     Inverse (BaseValue _) -> undefined
     Inverse exp -> Inverse $ eInG exp
     -- Addition cases
-    Addition (BaseValue (Element prime val1)) (BaseValue (Element _ val2)) -> BaseValue $ Element prime ((val1 + val2) `mod` prime)
+    Addition (BaseValue valA) (BaseValue valB) ->
+        let (kind, size, numA, numB) = case (valA, valB) of
+                (GroupElement s a, GroupElement _ b) -> (GroupElement, s, a, b)
+                (FieldElement s a, FieldElement _ b) -> (FieldElement, s, a, b)
+                _ -> undefined
+        in kind size $ (numA + numB) `mod` size
     Addition exp1@(BaseValue _) exp2 -> Addition exp1 (eInG exp2)
-    Addition exp1 exp2@(BaseValue _) -> Addition (eInG exp1) exp2  -- No explicit failure for Lambda!?
+    Addition exp1 exp2 -> Addition (eInG exp1) exp2
     -- Multiplicaiton cases
-    Multiplication (BaseValue (Element prime val1)) (BaseValue (Element _ val2)) -> BaseValue $ Element prime ((val1 * val2) `mod` prime)
+    Multiplicaiton (BaseValue valA) (BaseValue valB) ->
+        let (kind, size, numA, numB = case (valA, valB) of
+                (FieldElement s a, FieldElement _ b) -> (FieldElement, s, a, b)
+                _ -> undefined
+        in kind size $ (numA * numB) `mod` size
     Multiplication exp1@(BaseValue _) exp2 -> Multiplication exp1 (eInG exp2)
-    Multiplication exp1 exp2@(BaseValue _) -> Multiplication (eInG exp1) exp2  -- No explicit failure for Lambda!?
+    Multiplication exp1 exp2 -> Multiplication (eInG exp1) exp2
+    -- AsElement cases
+    -- AsNatural cases
     -- Application cases
     Application (BaseValue (Lambda var body)) arg -> evalExp ((var, arg):gamma) body
     Application (BaseValue _) _ -> undefined
