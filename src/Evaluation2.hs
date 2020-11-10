@@ -3,30 +3,48 @@ module Evaluation where
 import Arithmatic (modInv)
 import Nouns
 
-typeOfValue :: TypeContext -> Value -> Value
-typeOfValue _ GroupElement m _ = GroupType m
-typeOfValue _ GroupType _ = GroupClass
-typeOfValue _ GroupClass = Type
-typeOfValue _ FieldElement m _ = FieldType m
-typeOfValue _ FieldType _ = FieldClass
-typeOfValue _ FieldClass = Type
-typeOfValue gamma Orange bt ov = Choice (type) bt
-typeOfValue gamma Lambda v e = Function (typeOfVar v) (typeOf v:gamma e)
-typeOfValue _ Function _ _ = Type
-typeOfValue _ Type = Type
 
-type TypeContext = [Variable]
-lookupType :: TypeContext -> String -> Type
-lookupType (v:gamma) n = if n == (nameOfVar v)
-                         then typeOfVar v
-                         else lookupType gamma n
-lookupType [] _ = undefined  -- Gotta represent failure somehow!
+isMinimal :: Expression -> Bool
+isMinimal e = case e of
+    (Type) -> True
+    (Natural _) -> True
+    (Naturals) -> True
+    (GroupElement _ _) -> True
+    (Group _) -> True
+    (GroupClass) -> True
+    (FieldElement _ _) -> True
+    (Field _) -> True
+    (FieldClass) -> True
+    (Orange _ v) -> isMinimal v
+    (Blue _ v) -> isMinimal b
+    (Choice l r) -> isMinimal l && isMinimal r
+    (Pair f s) -> isMinimal f && isMinimal s
+    (Lambda name isA body) -> true -- ? 
+    (Function from to) -> isMinimal from && isMinimal to
+    _ -> False
 
-typeOf :: TypeContext -> Expression -> Value
+lazyReductionStep :: Context -> Expression -> Expression
+lazyReductionStep gamma expression = case expression of
+    Type -> Type
+    TypeOf exp -> eagerTypeOf exp
+    Cast
+
+typeOfExpression :: TypeContext -> Expression -> Expression
+typeOfExpression _ GroupElement m _ = GroupType m
+typeOfExpression _ GroupType _ = GroupClass
+typeOfExpression _ GroupClass = Type
+typeOfExpression _ FieldElement m _ = FieldType m
+typeOfExpression _ FieldType _ = FieldClass
+typeOfExpression _ FieldClass = Type
+typeOfExpression gamma Orange bt ov = Choice (type) bt
+typeOfExpression gamma Lambda v e = Function (typeOfVar v) (typeOf v:gamma e)
+typeOfExpression _ Function _ _ = Type
+typeOfExpression _ Type = Type
+
+typeOf :: Context -> Expression -> Expression
 typeOf gamma e = case e of    -- maybe be more agressive in failure
-    BaseValue v = typeOfValue gamma v
     BaseVariable name -> gamma `lookupType` name
-    TypeOf exp -> typeOfValue $ tInG exp
+    TypeOf exp -> typeOfExpression $ tInG exp
     Negative exp -> case tInG exp of
         t@(GroupType _) -> t
         t@(FieldType _) -> t
@@ -60,7 +78,7 @@ typeOf gamma e = case e of    -- maybe be more agressive in failure
         _ -> undefined
     Application func val -> let Function from to = tInG func  -- could fail
                             in if tInG val == from then to else undefined
-    Let var val body -> tInG $ Application (BaseValue (Lambda var body)) val
+    Let var val body -> tInG $ Application (BaseExpression (Lambda var body)) val
     Conditional pred a b -> let testBranchTypes = (== tInG b)
                                 testPredType = (&& (tInG pred == Field 2))
                             in assuming (testPredType . testBranchTypes) tInG a
@@ -78,10 +96,10 @@ lookupVariable [] _ = undefined
 
 evalExp :: EvalContext -> Expression -> Expression
 evalExp gamma e = case e of
-    val@(BaseValue _) -> val
+    val@(BaseExpression _) -> val
     BaseVariable name -> gamma `lookupVariable` name
     -- Negation cases
-    Negative (BaseValue element) ->
+    Negative (BaseExpression element) ->
         let (kind, size, num) = case element of
                 GroupElement s n -> (GroupElement, s, n)
                 FieldElement s n -> (FieldElement, s, n)
@@ -89,43 +107,43 @@ evalExp gamma e = case e of
         in kind size $ (-num) `mod` size
     Negative exp -> Negative $ eInG exp
     -- Inverse cases
-    Inverse (BaseValue (FieldElement size val)) ->
-        BaseValue $ maybe undefined (FieldElement size) (val `modInv` size)
-    Inverse (BaseValue _) -> undefined
+    Inverse (BaseExpression (FieldElement size val)) ->
+        BaseExpression $ maybe undefined (FieldElement size) (val `modInv` size)
+    Inverse (BaseExpression _) -> undefined
     Inverse exp -> Inverse $ eInG exp
     -- Addition cases
-    Addition (BaseValue valA) (BaseValue valB) ->
+    Addition (BaseExpression valA) (BaseExpression valB) ->
         let (kind, size, numA, numB) = case (valA, valB) of
                 (GroupElement s a, GroupElement _ b) -> (GroupElement, s, a, b)
                 (FieldElement s a, FieldElement _ b) -> (FieldElement, s, a, b)
                 _ -> undefined
         in kind size $ (numA + numB) `mod` size
-    Addition exp1@(BaseValue _) exp2 -> Addition exp1 (eInG exp2)
+    Addition exp1@(BaseExpression _) exp2 -> Addition exp1 (eInG exp2)
     Addition exp1 exp2 -> Addition (eInG exp1) exp2
     -- Multiplicaiton cases
-    Multiplicaiton (BaseValue valA) (BaseValue valB) ->
+    Multiplicaiton (BaseExpression valA) (BaseExpression valB) ->
         let (kind, size, numA, numB = case (valA, valB) of
                 (FieldElement s a, FieldElement _ b) -> (FieldElement, s, a, b)
                 _ -> undefined
         in kind size $ (numA * numB) `mod` size
-    Multiplication exp1@(BaseValue _) exp2 -> Multiplication exp1 (eInG exp2)
+    Multiplication exp1@(BaseExpression _) exp2 -> Multiplication exp1 (eInG exp2)
     Multiplication exp1 exp2 -> Multiplication (eInG exp1) exp2
     -- AsElement cases
     -- AsNatural cases
     -- Application cases
-    Application (BaseValue (Lambda var body)) arg -> evalExp ((var, arg):gamma) body
-    Application (BaseValue _) _ -> undefined
+    Application (BaseExpression (Lambda var body)) arg -> evalExp ((var, arg):gamma) body
+    Application (BaseExpression _) _ -> undefined
     Application funcExp arg -> Application (eInG funcExp) arg
     -- Let cases (Let is just sugar!)
-    Let var val body -> Application (BaseValue (Lambda var body)) val
+    Let var val body -> Application (BaseExpression (Lambda var body)) val
     -- Conditional cases
-    Conditional (BaseValue (Element 2 b)) expT expF -> eInG $ if 1 == b then expT else expF
-    Conditional (BaseValue _) _ _ -> undefined
+    Conditional (BaseExpression (Element 2 b)) expT expF -> eInG $ if 1 == b then expT else expF
+    Conditional (BaseExpression _) _ _ -> undefined
     Conditional predicate expT expF -> Conditional (eInG predicate) expT expF
     where eInG = evalExp gamma
 
-evaluateWith :: EvalContext -> Expression -> Value
-evaluateWith _ (BaseValue val) = val
+evaluateWith :: EvalContext -> Expression -> Expression
+evaluateWith _ (BaseExpression val) = val
 evaluateWith gamma exp = evaluateWith gamma $ evalExp gamma exp
 evaluate = evaluateWith []
 
@@ -135,8 +153,8 @@ evaluate = evaluateWith []
 testExp = Application func five
           where t = Field 11
                 x = BaseVariable "x"
-                five = BaseValue $ Element 11 5
-                func = BaseValue $ Lambda (Variable t "x") $ Addition x five
+                five = BaseExpression $ Element 11 5
+                func = BaseExpression $ Lambda (Variable t "x") $ Addition x five
 
 main :: IO ()
 main = do putStrLn "Hello, Haskell!"

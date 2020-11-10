@@ -10,12 +10,17 @@ data Value = GroupElement Integer Integer  -- group-size, number
            | FieldElement Integer Integer  -- field-size, number
            | FieldType Integer  -- size
            | FieldClass
+           | Orange Value Value  -- blue-type, orange-value
+           | Blue Value  -- orange-type, blue-value
+           | Choice Value Value  -- Orange is left, Blue is right.
            | Lambda Variable Expression
            | Function Value Value
+           | FlatMappable Value
+           | FlatMapClass
            | Type
              deriving (Eq, Show)
 
-Natural = GroupClass
+-- Natural = GroupClass
 
 data Expression = BaseValue Value      -- v
                 | BaseVariable String  -- x  -- not Variable?
@@ -26,7 +31,7 @@ data Expression = BaseValue Value      -- v
                 | Multiplication Expression Expression
                 | AsElement Expression Expression
                 | AsNatural Expression
-                -- | AsPrime Expression
+                | AsPrime Expression
                 | Application Expression Expression  -- function, value
                 | Let Variable Expression Expression  -- Let var=exp in body
                 | Conditional Expression Expression Expression  -- predicate, true-path, false-path

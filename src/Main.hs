@@ -123,4 +123,10 @@ main = do putStrLn "Hello, Haskell!"
 
 
 
+( \x:Int -> as_element[x + 1](1 + 5) ) : (Mod[x + 1]) : Group : Type
+
+( x:f() + y:g() ) 
+
+( Let x = as_element[x](x) In as_element[x](x) ) : Mod[x]
+
 
