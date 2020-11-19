@@ -24,6 +24,7 @@ header-includes:
 }
 \newcommand{\OR}{\;|\;}
 \newcommand{\MOD}{\;\%\;}
+\newcommand{\CONS}{{;}\mspace{-0mu}}
 \newcommand{\GroupOf}{\mathrm{GroupOf\;}}
 \newcommand{\Group}{\mathrm{Group}}
 \newcommand{\Type}{\mathrm{Type}}
@@ -49,10 +50,11 @@ $$
   n & \in & \mathbb{N} && \text{(not used directly)} \\[2mm]
   g & \define & n[n] &&  \text{n as an element of the cyclic group of order n.} \\[2mm]
   \tau & \define & \GroupOf n \OR \Group \OR \Perhaps \tau \OR \tau \to \tau \OR \Type && \text{types} \\[2mm]
-  v & \define & \tau \OR g \OR \Actually v \OR \Nope : e \OR \lambda\, x : e\, .\;e \ && \text{values} \\[2mm]
+  \Gamma & \define & [] \OR (x,e,\tau,\Gamma) \OR \Gamma\CONS\Gamma && \text{contexts, also written } \gamma \text{ when nested} \\[2mm]
+  v & \define & \tau \OR g \OR \Actually v \OR \Nope : e \OR \lambda\,x:e\,.\;e && \text{values} \\[2mm]
   e & \define & x \OR v \OR \GroupOf e \OR \Perhaps e \OR e \to e \OR \Actually e && \text{expressions} \\[1mm]
     &         & \OR e \booleq e \OR e + e \OR -e \OR e \MOD e \OR \Default e\;e \OR \TypeOf e \\[1mm]
-    &         & \OR \Let x:e=e\In e \OR \If e \Then e \Else e \OR e\; e
+    &         & \OR \Let x:e=e\In e \OR \If e \Then e \Else e \OR e\; e \OR \Gamma\vdash e
 \end{array}
 $$
 
@@ -86,6 +88,52 @@ $$
 \mathsf{IFTRUE}\,\dfrac{ }{a}  \\[4mm]
 \mathsf{IFFALSE}\,\dfrac{ }{a}  \\[4mm]
 \mathsf{BETA}\,\dfrac{ }{a}  \\[4mm]
+\mathsf{DROP}\,\dfrac{ }{\Gamma \vdash v \reduce v}  \\[4mm]
+\end{array}
+$$
+
+# $\Gamma$ Rules
+### combination and elimination
+$$
+\begin{array}{c}
+\mathsf{SHADOW}\,\dfrac{ }{\Gamma_1 \vdash \Gamma_2 \vdash e \reduce \Gamma_1\CONS\Gamma_2 \vdash e}  \\[4mm]
+\mathsf{EMPTYHEAD}\,\dfrac{ }{\Gamma\CONS[] \vdash e \reduce \Gamma \vdash e}  \\[4mm]
+\mathsf{EMPTYTAIL}\,\dfrac{ }{[] \vdash e \reduce e}  \\[4mm]
+\end{array}
+$$
+
+### elimination to value
+
+$$
+\begin{array}{c}
+\mathsf{DROPFROMTAU}\,\dfrac{ }{\Gamma \vdash \tau \reduce \tau}  \\[4mm]
+\mathsf{DROPFROMELEM}\,\dfrac{ }{\Gamma \vdash g \reduce g}  \\[4mm]
+\end{array}
+$$
+
+### push down recursively
+
+$$
+\begin{array}{c}
+\mathsf{GR\_ACTUALLY}\,\dfrac{ }{\Gamma \vdash \Actually e \reduce \Actually (\Gamma \vdash e)}  \\[4mm]
+\mathsf{GR\_NOPE}\,\dfrac{ }{\Gamma \vdash \Nope : e \reduce \Nope : (\Gamma \vdash e)}  \\[4mm]
+\mathsf{GR\_GROUPOF}\,\dfrac{ }{\Gamma \vdash \GroupOf e \reduce \GroupOf (\Gamma \vdash e)}  \\[4mm]
+\mathsf{GR\_PERHAPS}\,\dfrac{ }{\Gamma \vdash \Perhaps e \reduce \Perhaps (\Gamma \vdash e)}  \\[4mm]
+\mathsf{GR\_FUNC}\,\dfrac{ }{\Gamma \vdash e_1 \to e_2 \reduce (\Gamma \vdash e_1) \to (\Gamma \vdash e_2)}  \\[4mm]
+\mathsf{GR\_EQUALITY}\,\dfrac{ }{\Gamma \vdash e_1 \booleq e_2 \reduce (\Gamma \vdash e_1) \booleq (\Gamma \vdash e_2)}  \\[4mm]
+\mathsf{GR\_PLUS}\,\dfrac{ }{\Gamma \vdash e_1 + e_2 \reduce (\Gamma \vdash e_1) + (\Gamma \vdash e_2)}  \\[4mm]
+\mathsf{GR\_NEGATION}\,\dfrac{ }{\Gamma \vdash -e \reduce -(\Gamma \vdash e)}  \\[4mm]
+\mathsf{GR\_MODULO}\,\dfrac{ }{\Gamma \vdash e_1 \MOD e_2 \reduce (\Gamma \vdash e_1) \MOD (\Gamma \vdash e_2)}  \\[4mm]
+\mathsf{BETA}\,\dfrac{ }{a}  \\[4mm]
+\end{array}
+$$
+
+### the hard cases
+
+$$
+\begin{array}{c}
+\mathsf{RECURSELAMBDA}\,\dfrac{ }{\Gamma \vdash \lambda\,x:e_1\,.\;e_2 \reduce \lambda\, x:(\Gamma \vdash e_1)\,.\;(\Gamma \vdash e_2)}  \\[4mm]
+\mathsf{BETA}\,\dfrac{ }{a}  \\[4mm]
 \end{array}
 $$
 
@@ -112,6 +160,7 @@ $$
 \mathsf{T\_TYPEOF}\,\dfrac{ }{a}  \\[4mm]
 \mathsf{T\_LET}\,\dfrac{ }{a}  \\[4mm]
 \mathsf{T\_IF}\,\dfrac{ }{a}  \\[4mm]
+\mathsf{T\_GAMMA}\,\dfrac{ }{\Gamma \vdash e }  \\[4mm]
 \end{array}
 $$
 
