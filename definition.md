@@ -87,8 +87,7 @@ $$
 \mathsf{LET}\,\dfrac{ }{a}  \\[4mm]
 \mathsf{IFTRUE}\,\dfrac{ }{a}  \\[4mm]
 \mathsf{IFFALSE}\,\dfrac{ }{a}  \\[4mm]
-\mathsf{BETA}\,\dfrac{ }{a}  \\[4mm]
-\mathsf{DROP}\,\dfrac{ }{\Gamma \vdash v \reduce v}  \\[4mm]
+\mathsf{BETA}\,\dfrac{ }{}  \\[4mm]
 \end{array}
 $$
 
@@ -119,12 +118,15 @@ $$
 \mathsf{GR\_NOPE}\,\dfrac{ }{\Gamma \vdash \Nope : e \reduce \Nope : (\Gamma \vdash e)}  \\[4mm]
 \mathsf{GR\_GROUPOF}\,\dfrac{ }{\Gamma \vdash \GroupOf e \reduce \GroupOf (\Gamma \vdash e)}  \\[4mm]
 \mathsf{GR\_PERHAPS}\,\dfrac{ }{\Gamma \vdash \Perhaps e \reduce \Perhaps (\Gamma \vdash e)}  \\[4mm]
-\mathsf{GR\_FUNC}\,\dfrac{ }{\Gamma \vdash e_1 \to e_2 \reduce (\Gamma \vdash e_1) \to (\Gamma \vdash e_2)}  \\[4mm]
-\mathsf{GR\_EQUALITY}\,\dfrac{ }{\Gamma \vdash e_1 \booleq e_2 \reduce (\Gamma \vdash e_1) \booleq (\Gamma \vdash e_2)}  \\[4mm]
-\mathsf{GR\_PLUS}\,\dfrac{ }{\Gamma \vdash e_1 + e_2 \reduce (\Gamma \vdash e_1) + (\Gamma \vdash e_2)}  \\[4mm]
+\mathsf{GR\_FUNC}\,\dfrac{ }{\Gamma \vdash (e_1 \to e_2) \reduce (\Gamma \vdash e_1) \to (\Gamma \vdash e_2)}  \\[4mm]
+\mathsf{GR\_EQUALITY}\,\dfrac{ }{\Gamma \vdash (e_1 \booleq e_2) \reduce (\Gamma \vdash e_1) \booleq (\Gamma \vdash e_2)}  \\[4mm]
+\mathsf{GR\_PLUS}\,\dfrac{ }{\Gamma \vdash (e_1 + e_2) \reduce (\Gamma \vdash e_1) + (\Gamma \vdash e_2)}  \\[4mm]
 \mathsf{GR\_NEGATION}\,\dfrac{ }{\Gamma \vdash -e \reduce -(\Gamma \vdash e)}  \\[4mm]
-\mathsf{GR\_MODULO}\,\dfrac{ }{\Gamma \vdash e_1 \MOD e_2 \reduce (\Gamma \vdash e_1) \MOD (\Gamma \vdash e_2)}  \\[4mm]
-\mathsf{BETA}\,\dfrac{ }{a}  \\[4mm]
+\mathsf{GR\_MODULO}\,\dfrac{ }{\Gamma \vdash (e_1 \MOD e_2) \reduce (\Gamma \vdash e_1) \MOD (\Gamma \vdash e_2)}  \\[4mm]
+\mathsf{GR\_DEFAULT}\,\dfrac{ }{\Gamma \vdash \Default e_1\;e_2 \reduce \Default (\Gamma \vdash e_1)\;(\Gamma \vdash e_2)}  \\[4mm]
+\mathsf{GR\_TYPEOF}\,\dfrac{ }{\Gamma \vdash \TypeOf e \reduce \TypeOf (\Gamma \vdash e)}  \\[4mm]
+\mathsf{GR\_IF}\,\dfrac{ }{\Gamma \vdash \If e_1 \Then e_2 \Else e_3 \reduce \If (\Gamma \vdash e_1) \Then (\Gamma \vdash e_2) \Else (\Gamma \vdash e_3)}  \\[4mm]
+\mathsf{GR\_APP}\,\dfrac{ }{\Gamma \vdash (e_1\;e_2) \reduce (\Gamma \vdash e_1)\;(\Gamma \vdash e_2)}  \\[4mm]
 \end{array}
 $$
 
