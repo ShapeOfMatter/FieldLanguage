@@ -133,12 +133,12 @@ $$
 \end{array}
 $$
 
-### the hard cases
+### variables
 
 $$
-\begin{array}{c}
-\mathsf{VARIABLE}\,\dfrac{ x' = x }{(x',e',\tau',\Gamma')\CONS\Gamma \vdash x \reduce (x',e',\tau',\Gamma')\CONS\Gamma' \vdash e'}  \\[5mm]
-\mathsf{VARIABLE2}\,\dfrac{ x' = x }{(x',e',\tau',\Gamma') \vdash x \reduce (x',e',\tau',\Gamma')\CONS\Gamma' \vdash e'}  \\[5mm]
+\begin{array}{c l}
+\mathsf{ISOLATEVARIABLE}\,\dfrac{ x' = x }{(x',e',\tau',\Gamma')\CONS\Gamma \vdash x \reduce (x',e',\tau',\Gamma') \vdash x} & \text{may be used here or in TypeOf}  \\[5mm]
+\mathsf{VARIABLE}\,\dfrac{ x' = x }{(x',e',\tau',\Gamma') \vdash x \reduce (x',e',\tau',\Gamma')\CONS\Gamma' \vdash e'}  \\[5mm]
 \mathsf{VARIABLESEARCH}\,\dfrac{ x' \neq x \quad \Gamma\vdash x \reduce e }{(x',e',\tau',\Gamma')\CONS\Gamma \vdash x \reduce e}  \\[5mm]
 \end{array}
 $$
@@ -146,7 +146,7 @@ $$
 # Typing Rules
 
 $$
-\begin{array}{c}
+\begin{array}{c p{3cm}}
 \mathsf{T\_TYPE}\,\dfrac{ }{\TypeOf \Type \reduce \Type}  \\[5mm]
 \mathsf{T\_FUNC}\,\dfrac{ }{\TypeOf (e_1 \to e_2) \reduce \Type}  \\[5mm]
 \mathsf{T\_PERHAPS}\,\dfrac{ }{\TypeOf (\Perhaps e) \reduce \Type}  \\[5mm]
@@ -156,8 +156,8 @@ $$
 \mathsf{T\_ELEM}\,\dfrac{ }{\TypeOf n_1[n_2] \reduce \GroupOf n_2}  \\[5mm]
 \mathsf{T\_ACTUALLY}\,\dfrac{ }{\TypeOf (\Actually e) \reduce \Perhaps (\TypeOf e)}  \\[5mm]
 \mathsf{T\_NOPE}\,\dfrac{ }{\TypeOf (\Nope : e) \reduce \Perhaps e}  \\[5mm]
-\mathsf{T\_LAMBDA}\,\dfrac{ \Gamma;(x,\bot,e_1,\Gamma) \vdash \TypeOf e_2 \reduce e' }{\Gamma \vdash \TypeOf (\lambda\,x:e_1\,.\;e_2) \reduce e_1 \to e' }  \\[5mm]
-\mathsf{T\_X}\,\dfrac{ }{a}  \\[5mm]
+\mathsf{T\_LAMBDA}\,\dfrac{ }{ \TypeOf (\lambda\,x:e_1\,.\;e_2) \reduce e_1 \to \TypeOf ((x,\bot,e_1, [])\vdash e_2) } & \text{This feels wrong.}\newline\text{Are we handling recursive-x right?}\newline\text{shadowing?}  \\[5mm]
+\mathsf{T\_VARIABLE}\,\dfrac{ x' = x }{\TypeOf ((x',e',\tau',\Gamma') \vdash x) \reduce (x',e',\tau',\Gamma')\CONS\Gamma' \vdash e'}  \\[5mm]
 \mathsf{T\_EQUALITY}\,\dfrac{ }{a}  \\[5mm]
 \mathsf{T\_PLUS}\,\dfrac{ }{a}  \\[5mm]
 \mathsf{T\_NEGATION}\,\dfrac{ }{a}  \\[5mm]
@@ -166,7 +166,6 @@ $$
 \mathsf{T\_TYPEOF}\,\dfrac{ }{a}  \\[5mm]
 \mathsf{T\_LET}\,\dfrac{ }{a}  \\[5mm]
 \mathsf{T\_IF}\,\dfrac{ }{a}  \\[5mm]
-\mathsf{T\_GAMMA}\,\dfrac{ }{\Gamma \vdash e }  \\[5mm]
 \end{array}
 $$
 
